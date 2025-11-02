@@ -59,6 +59,8 @@ TruthStamp consists of three interconnected smart contracts:
 
 ### 1. Claim Registry Contract
 **Contract ID:** `CDJDSL4LO3442NKVWAQIXGZLJOR7IKIZWFAQZUERPKEFSUETJLZFNUAY`
+<img width="2922" height="1594" alt="image" src="https://github.com/user-attachments/assets/f3d34c88-1b38-4086-a64c-a4586551b39c" />
+
 
 Manages claim lifecycle and verification status.
 
