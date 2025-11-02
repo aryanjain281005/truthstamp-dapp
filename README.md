@@ -72,6 +72,7 @@ Manages claim lifecycle and verification status.
 
 ### 2. Expert Registry Contract
 **Contract ID:** `CCLPI23VX3PVWBMPGDOYJZTKS4XMUWPWIPEOKSTZYK2WDQ6OEFQUJHUC`
+<img width="2936" height="1568" alt="image" src="https://github.com/user-attachments/assets/052a11a4-7146-4c76-815a-c45ce943937e" />
 
 Handles expert registration and reputation management.
 
@@ -84,6 +85,8 @@ Handles expert registration and reputation management.
 
 ### 3. Review Consensus Contract
 **Contract ID:** `CBQOIHPAZMEZDGAPQRPPB3WCXL5YHWKVQ6SUVU5CUJUSEHCDLVER67M4`
+<img width="2922" height="1586" alt="image" src="https://github.com/user-attachments/assets/2b751fbc-5543-4dcf-a6ee-dfaffd14b24a" />
+
 
 Calculates consensus and manages reward distribution.
 
