@@ -6,8 +6,10 @@ import {
   BASE_FEE,
   xdr,
   Address,
-  nativeToScVal
+  nativeToScVal,
+  scValToNative
 } from '@stellar/stellar-sdk';
+import { signTransaction } from '@stellar/freighter-api';
 
 // Contract addresses from deployed contracts
 export const CLAIM_REGISTRY_CONTRACT = 'CDJDSL4LO3442NKVWAQIXGZLJOR7IKIZWFAQZUERPKEFSUETJLZFNUAY';
@@ -41,29 +43,30 @@ export async function submitClaim(
       sources
     });
 
-    // Check if Freighter wallet is available
-    const freighter = (window as any).freighter;
-    
-    if (!freighter) {
-      console.warn('⚠️ Freighter wallet not installed - using demo mode');
-      const mockTxHash = `demo_${Date.now().toString(16)}_${Math.random().toString(36).substring(2, 15)}`;
-      console.log('📝 Demo transaction created:', mockTxHash);
-      return mockTxHash;
-    }
-
-    console.log('✅ Freighter detected, preparing blockchain transaction...');
+    console.log('✅ Preparing real blockchain transaction...');
 
     // Create contract instance
     const contract = new Contract(CLAIM_REGISTRY_CONTRACT);
     
     // Get account details from network
+    console.log('📡 Fetching account from Stellar network...');
     const sourceAccount = await server.getAccount(walletAddress);
     
-    // Convert parameters to ScVal format for Soroban
-    const submitterAddress = new Address(walletAddress);
-    const claimTextScVal = nativeToScVal(claimText, { type: 'string' });
-    const categoryScVal = nativeToScVal(category, { type: 'string' });
-    const sourcesScVal = nativeToScVal(sources, { type: 'string[]' });
+    console.log('🔨 Building contract transaction...');
+    console.log('Parameters:', { claimText, category, sources });
+    
+    // Properly encode each parameter using xdr
+    const addressParam = new Address(walletAddress).toScVal();
+    const textParam = xdr.ScVal.scvString(claimText);
+    const categoryParam = xdr.ScVal.scvString(category);
+    
+    // Encode sources as a vector of strings
+    const filteredSources = sources.filter(s => s && s.trim() !== '');
+    const sourcesParam = xdr.ScVal.scvVec(
+      filteredSources.map(source => xdr.ScVal.scvString(source))
+    );
+    
+    console.log('Encoded parameters successfully');
     
     // Build the contract transaction
     const transaction = new TransactionBuilder(sourceAccount, {
@@ -73,27 +76,30 @@ export async function submitClaim(
       .addOperation(
         contract.call(
           'submit_claim',
-          submitterAddress.toScVal(),
-          claimTextScVal,
-          categoryScVal,
-          sourcesScVal
+          addressParam,
+          textParam,
+          categoryParam,
+          sourcesParam
         )
       )
-      .setTimeout(30)
+      .setTimeout(180)
       .build();
 
-    console.log('📤 Preparing transaction for signing...');
+    console.log('� Simulating transaction...');
     
     // Prepare and simulate the transaction
     const preparedTransaction = await server.prepareTransaction(transaction);
     
-    console.log('✍️ Requesting signature from Freighter...');
+    console.log('✍️ Requesting signature from Freighter wallet...');
     
-    // Sign with Freighter
-    const signedXDR = await freighter.signTransaction(preparedTransaction.toXDR(), {
+    // Sign with Freighter using the imported function
+    const signedXDR = await signTransaction(preparedTransaction.toXDR(), {
       network: 'TESTNET',
       networkPassphrase: NETWORK_PASSPHRASE,
+      accountToSign: walletAddress,
     });
+    
+    console.log('✅ Transaction signed successfully!');
     
     // Convert signed XDR back to transaction
     const signedTransaction = TransactionBuilder.fromXDR(signedXDR, NETWORK_PASSPHRASE);
@@ -103,17 +109,22 @@ export async function submitClaim(
     // Send transaction to the network
     const response = await server.sendTransaction(signedTransaction);
     
-    console.log('✅ Transaction submitted! Hash:', response.hash);
+    console.log('✅ Transaction submitted! Response:', response);
+    console.log('🎉 Claim submitted successfully! Hash:', response.hash);
     
-    // Return transaction hash
+    // Return transaction hash immediately (don't wait for confirmation to avoid XDR parsing issues)
     return response.hash;
     
   } catch (error: any) {
     console.error('❌ Error submitting claim:', error);
     
     // Provide more helpful error messages
-    if (error.message?.includes('account not found')) {
+    if (error.message?.includes('account not found') || error.message?.includes('Account not found')) {
       throw new Error('Account not funded. Please get testnet XLM from https://laboratory.stellar.org/#account-creator');
+    }
+    
+    if (error.message?.includes('User declined')) {
+      throw new Error('Transaction rejected by user');
     }
     
     throw error;
@@ -123,30 +134,70 @@ export async function submitClaim(
 // Register as an expert
 export async function registerExpert(
   walletAddress: string,
-  expertise: string,
-  credentials: string,
-  level: number
+  name: string,
+  bio: string,
+  expertiseCategories: string[],
+  stakeAmount: bigint
 ): Promise<string> {
   try {
-    const freighter = (window as any).freighter;
-    
-    if (!freighter) {
-      throw new Error('Freighter wallet not installed');
-    }
-
-    const contract = new Contract(EXPERT_REGISTRY_CONTRACT);
-
-    console.log('Registering expert:', {
+    console.log('🚀 Registering expert on blockchain:', {
       contract: EXPERT_REGISTRY_CONTRACT,
       walletAddress,
-      expertise,
-      credentials,
-      level
+      name,
+      bio,
+      expertiseCategories,
+      stakeAmount
     });
 
-    const mockTxHash = `expert_${Date.now()}_${Math.random().toString(36).substring(7)}`;
+    const contract = new Contract(EXPERT_REGISTRY_CONTRACT);
     
-    return mockTxHash;
+    // Get account details from network
+    const sourceAccount = await server.getAccount(walletAddress);
+    
+    // Convert parameters to ScVal format
+    const expertAddress = new Address(walletAddress);
+    const nameScVal = nativeToScVal(name, { type: 'string' });
+    const bioScVal = nativeToScVal(bio, { type: 'string' });
+    // Convert categories array properly for Soroban
+    const categoriesScVal = nativeToScVal(expertiseCategories.map(c => c || ''));
+    const stakeScVal = nativeToScVal(stakeAmount, { type: 'i128' });
+    
+    // Build the transaction
+    const transaction = new TransactionBuilder(sourceAccount, {
+      fee: BASE_FEE,
+      networkPassphrase: NETWORK_PASSPHRASE,
+    })
+      .addOperation(
+        contract.call(
+          'register_expert',
+          expertAddress.toScVal(),
+          nameScVal,
+          bioScVal,
+          categoriesScVal,
+          stakeScVal
+        )
+      )
+      .setTimeout(180)
+      .build();
+    
+    // Prepare and simulate
+    const preparedTransaction = await server.prepareTransaction(transaction);
+    
+    // Sign with Freighter
+    const signedXDR = await signTransaction(preparedTransaction.toXDR(), {
+      network: 'TESTNET',
+      networkPassphrase: NETWORK_PASSPHRASE,
+      accountToSign: walletAddress,
+    });
+    
+    const signedTransaction = TransactionBuilder.fromXDR(signedXDR, NETWORK_PASSPHRASE);
+    
+    // Send transaction
+    const response = await server.sendTransaction(signedTransaction);
+    
+    console.log('✅ Expert registered! Hash:', response.hash);
+    
+    return response.hash;
   } catch (error) {
     console.error('Error registering expert:', error);
     throw error;
@@ -156,32 +207,72 @@ export async function registerExpert(
 // Submit a review
 export async function submitReview(
   walletAddress: string,
-  claimId: number,
-  verdict: boolean,
+  claimId: bigint,
+  verdict: 'True' | 'False',
+  reasoning: string,
   confidence: number,
-  comment: string
+  stakeAmount: bigint
 ): Promise<string> {
   try {
-    const freighter = (window as any).freighter;
-    
-    if (!freighter) {
-      throw new Error('Freighter wallet not installed');
-    }
-
-    const contract = new Contract(REVIEW_CONSENSUS_CONTRACT);
-
-    console.log('Submitting review:', {
+    console.log('🚀 Submitting review to blockchain:', {
       contract: REVIEW_CONSENSUS_CONTRACT,
       walletAddress,
       claimId,
       verdict,
       confidence,
-      comment
+      stakeAmount
     });
 
-    const mockTxHash = `review_${Date.now()}_${Math.random().toString(36).substring(7)}`;
+    const contract = new Contract(REVIEW_CONSENSUS_CONTRACT);
     
-    return mockTxHash;
+    // Get account details from network
+    const sourceAccount = await server.getAccount(walletAddress);
+    
+    // Convert parameters to ScVal format
+    const expertAddress = new Address(walletAddress);
+    const claimIdScVal = nativeToScVal(claimId, { type: 'u64' });
+    const verdictScVal = xdr.ScVal.scvSymbol(verdict);
+    const reasoningScVal = nativeToScVal(reasoning, { type: 'string' });
+    const confidenceScVal = nativeToScVal(confidence, { type: 'u32' });
+    const stakeScVal = nativeToScVal(stakeAmount, { type: 'i128' });
+    
+    // Build the transaction
+    const transaction = new TransactionBuilder(sourceAccount, {
+      fee: BASE_FEE,
+      networkPassphrase: NETWORK_PASSPHRASE,
+    })
+      .addOperation(
+        contract.call(
+          'submit_review',
+          expertAddress.toScVal(),
+          claimIdScVal,
+          verdictScVal,
+          reasoningScVal,
+          confidenceScVal,
+          stakeScVal
+        )
+      )
+      .setTimeout(180)
+      .build();
+    
+    // Prepare and simulate
+    const preparedTransaction = await server.prepareTransaction(transaction);
+    
+    // Sign with Freighter
+    const signedXDR = await signTransaction(preparedTransaction.toXDR(), {
+      network: 'TESTNET',
+      networkPassphrase: NETWORK_PASSPHRASE,
+      accountToSign: walletAddress,
+    });
+    
+    const signedTransaction = TransactionBuilder.fromXDR(signedXDR, NETWORK_PASSPHRASE);
+    
+    // Send transaction
+    const response = await server.sendTransaction(signedTransaction);
+    
+    console.log('✅ Review submitted! Hash:', response.hash);
+    
+    return response.hash;
   } catch (error) {
     console.error('Error submitting review:', error);
     throw error;
