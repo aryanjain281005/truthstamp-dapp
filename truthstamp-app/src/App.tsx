@@ -4,6 +4,7 @@ import './App.css';
 import HomePage from './pages/HomePage';
 import SubmitClaim from './pages/SubmitClaim';
 import BrowseClaims from './pages/BrowseClaims';
+import MyClaims from './pages/MyClaims';
 import ClaimDetail from './pages/ClaimDetail';
 import ExpertDashboard from './pages/ExpertDashboard';
 import { connectWallet, getPublicKey } from './utils/wallet';
@@ -53,6 +54,7 @@ function App() {
               <Link to="/" className="nav-link">Home</Link>
               <Link to="/submit" className="nav-link">Submit Claim</Link>
               <Link to="/claims" className="nav-link">Browse Claims</Link>
+              <Link to="/my-claims" className="nav-link">My Claims</Link>
               <Link to="/expert" className="nav-link">Expert Dashboard</Link>
             </div>
 
@@ -81,7 +83,8 @@ function App() {
           <Routes>
             <Route path="/" element={<HomePage walletAddress={walletAddress} />} />
             <Route path="/submit" element={<SubmitClaim walletAddress={walletAddress} />} />
-            <Route path="/claims" element={<BrowseClaims />} />
+            <Route path="/claims" element={<BrowseClaims walletAddress={walletAddress} />} />
+            <Route path="/my-claims" element={<MyClaims walletAddress={walletAddress} />} />
             <Route path="/claim/:id" element={<ClaimDetail walletAddress={walletAddress} />} />
             <Route path="/expert" element={<ExpertDashboard walletAddress={walletAddress} />} />
           </Routes>

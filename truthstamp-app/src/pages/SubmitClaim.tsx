@@ -48,7 +48,7 @@ const SubmitClaim: React.FC<SubmitClaimProps> = ({ walletAddress }) => {
       const isRealTransaction = !txHash.startsWith('demo_');
       
       const message = isRealTransaction
-        ? `🎉 Claim submitted to Stellar blockchain!\n\n✅ Transaction Hash:\n${txHash}\n\n📋 Claim: "${claimText}"\n🏷️ Category: ${category}\n\n✨ Your claim has been recorded on Stellar Soroban testnet!\n📊 Experts can now review and verify this claim.\n💰 The 0.5 XLM submission fee has been paid.\n\n🔍 View on Stellar Explorer:\nhttps://stellar.expert/explorer/testnet/tx/${txHash}`
+        ? `🎉 Claim submitted to Stellar blockchain!\n\n✅ Transaction Hash:\n${txHash}\n\n📋 Claim: "${claimText}"\n🏷️ Category: ${category}\n\n✨ Your claim has been recorded on Stellar Soroban testnet!\n📊 Experts can now review and verify this claim.\n💰 Transaction completed (10 XLM deducted from your wallet)\n\n🔍 View your claim in "My Claims" or "Browse Claims"\n\n🔍 View on Stellar Explorer:\nhttps://stellar.expert/explorer/testnet/tx/${txHash}`
         : `🎉 Claim submitted successfully! (Demo Mode)\n\n✅ Transaction: ${txHash}\n\n📋 Claim: "${claimText}"\n🏷️ Category: ${category}\n\n💡 Demo Mode Active: Your Freighter wallet is connected but this is a simulated transaction for testing.\n\nTo submit real blockchain transactions:\n1. Ensure your wallet has testnet XLM\n2. Get free testnet XLM: https://laboratory.stellar.org/#account-creator`;
       
       alert(message);
@@ -69,7 +69,15 @@ const SubmitClaim: React.FC<SubmitClaimProps> = ({ walletAddress }) => {
     <div className="submit-claim-page">
       <div className="page-header">
         <h1>Submit a Claim</h1>
-        <p>Submit a claim for expert verification with 0.5 XLM fee</p>
+        <p>Submit a claim for expert verification on the blockchain</p>
+      </div>
+
+      <div className="fee-notice">
+        <div className="notice-icon">💰</div>
+        <div className="notice-content">
+          <h3>Transaction Fee Required</h3>
+          <p>Submitting a claim requires a <strong>10 XLM transaction fee</strong> to be paid from your wallet. This ensures serious submissions and supports the decentralized verification network.</p>
+        </div>
       </div>
 
       <form onSubmit={handleSubmit} className="claim-form">
@@ -128,15 +136,15 @@ const SubmitClaim: React.FC<SubmitClaimProps> = ({ walletAddress }) => {
 
         <div className="form-actions">
           <div className="fee-info">
-            <span>Submission Fee:</span>
-            <strong>0.5 XLM</strong>
+            <span>Transaction Fee:</span>
+            <strong>10 XLM</strong>
           </div>
           <button
             type="submit"
             className="btn btn-primary"
             disabled={!walletAddress || isSubmitting}
           >
-            {isSubmitting ? 'Submitting...' : 'Submit Claim'}
+            {isSubmitting ? 'Submitting...' : 'Submit Claim (10 XLM)'}
           </button>
         </div>
       </form>

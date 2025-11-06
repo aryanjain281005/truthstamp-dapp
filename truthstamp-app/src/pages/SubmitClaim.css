@@ -5,7 +5,7 @@
 }
 
 .page-header {
-  margin-bottom: 3rem;
+  margin-bottom: 2rem;
   text-align: center;
 }
 
@@ -21,6 +21,41 @@
 .page-header p {
   color: var(--text-secondary);
   font-size: 1.1rem;
+}
+
+.fee-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  border: 2px solid #f59e0b;
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.2);
+}
+
+.notice-icon {
+  font-size: 2rem;
+  flex-shrink: 0;
+}
+
+.notice-content h3 {
+  margin: 0 0 0.5rem 0;
+  font-size: 1.1rem;
+  color: #92400e;
+}
+
+.notice-content p {
+  margin: 0;
+  color: #78350f;
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.notice-content strong {
+  color: #b45309;
+  font-weight: 700;
 }
 
 .claim-form {

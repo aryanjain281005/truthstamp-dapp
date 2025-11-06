@@ -279,15 +279,222 @@ export async function submitReview(
   }
 }
 
-// Get claim details
-export async function getClaim(claimId: number): Promise<any> {
+// Get expert profile
+export async function getExpert(walletAddress: string): Promise<any> {
   try {
-    // TODO: Query contract state
-    console.log('Fetching claim:', claimId);
+    console.log('📋 Fetching expert profile:', walletAddress);
     
-    return null; // Will return actual claim data
+    const contract = new Contract(EXPERT_REGISTRY_CONTRACT);
+    const sourceAccount = await server.getAccount(walletAddress);
+    
+    const expertAddress = new Address(walletAddress);
+    
+    const transaction = new TransactionBuilder(sourceAccount, {
+      fee: BASE_FEE,
+      networkPassphrase: NETWORK_PASSPHRASE,
+    })
+      .addOperation(contract.call('get_expert', expertAddress.toScVal()))
+      .setTimeout(180)
+      .build();
+    
+    const preparedTransaction = await server.prepareTransaction(transaction);
+    const simulation = await server.simulateTransaction(preparedTransaction);
+    
+    if (SorobanRpc.Api.isSimulationSuccess(simulation)) {
+      const returnValue = simulation.result?.retval;
+      if (returnValue) {
+        const expert = scValToNative(returnValue);
+        console.log('✅ Expert profile fetched:', expert);
+        return expert;
+      }
+    }
+    
+    return null;
+  } catch (error) {
+    console.error('Error fetching expert:', error);
+    return null;
+  }
+}
+
+// Check if address is registered expert
+export async function isExpert(walletAddress: string): Promise<boolean> {
+  try {
+    console.log('🔍 Checking if expert:', walletAddress);
+    
+    const contract = new Contract(EXPERT_REGISTRY_CONTRACT);
+    const sourceAccount = await server.getAccount(walletAddress);
+    
+    const expertAddress = new Address(walletAddress);
+    
+    const transaction = new TransactionBuilder(sourceAccount, {
+      fee: BASE_FEE,
+      networkPassphrase: NETWORK_PASSPHRASE,
+    })
+      .addOperation(contract.call('is_expert', expertAddress.toScVal()))
+      .setTimeout(180)
+      .build();
+    
+    const preparedTransaction = await server.prepareTransaction(transaction);
+    const simulation = await server.simulateTransaction(preparedTransaction);
+    
+    if (SorobanRpc.Api.isSimulationSuccess(simulation)) {
+      const returnValue = simulation.result?.retval;
+      if (returnValue) {
+        const isRegistered = scValToNative(returnValue);
+        console.log('✅ Expert status:', isRegistered);
+        return isRegistered;
+      }
+    }
+    
+    return false;
+  } catch (error) {
+    console.error('Error checking expert status:', error);
+    return false;
+  }
+}
+
+// Get claim details
+export async function getClaim(walletAddress: string, claimId: number): Promise<any> {
+  try {
+    console.log('📋 Fetching claim:', claimId);
+    
+    const contract = new Contract(CLAIM_REGISTRY_CONTRACT);
+    const sourceAccount = await server.getAccount(walletAddress);
+    
+    const claimIdScVal = xdr.ScVal.scvU64(xdr.Uint64.fromString(claimId.toString()));
+    
+    const transaction = new TransactionBuilder(sourceAccount, {
+      fee: BASE_FEE,
+      networkPassphrase: NETWORK_PASSPHRASE,
+    })
+      .addOperation(contract.call('get_claim', claimIdScVal))
+      .setTimeout(180)
+      .build();
+    
+    const preparedTransaction = await server.prepareTransaction(transaction);
+    const simulation = await server.simulateTransaction(preparedTransaction);
+    
+    if (SorobanRpc.Api.isSimulationSuccess(simulation)) {
+      const returnValue = simulation.result?.retval;
+      if (returnValue) {
+        const claim = scValToNative(returnValue);
+        console.log('✅ Claim fetched:', claim);
+        return claim;
+      }
+    }
+    
+    return null;
   } catch (error) {
     console.error('Error fetching claim:', error);
-    throw error;
+    return null;
+  }
+}
+
+// Get claim count
+export async function getClaimCount(walletAddress: string): Promise<number> {
+  try {
+    console.log('📊 Fetching claim count');
+    
+    const contract = new Contract(CLAIM_REGISTRY_CONTRACT);
+    const sourceAccount = await server.getAccount(walletAddress);
+    
+    const transaction = new TransactionBuilder(sourceAccount, {
+      fee: BASE_FEE,
+      networkPassphrase: NETWORK_PASSPHRASE,
+    })
+      .addOperation(contract.call('get_claim_count'))
+      .setTimeout(180)
+      .build();
+    
+    const preparedTransaction = await server.prepareTransaction(transaction);
+    const simulation = await server.simulateTransaction(preparedTransaction);
+    
+    if (SorobanRpc.Api.isSimulationSuccess(simulation)) {
+      const returnValue = simulation.result?.retval;
+      if (returnValue) {
+        const count = scValToNative(returnValue);
+        console.log('✅ Claim count:', count);
+        return count;
+      }
+    }
+    
+    return 0;
+  } catch (error) {
+    console.error('Error fetching claim count:', error);
+    return 0;
+  }
+}
+
+// Get review for a claim
+export async function getReview(walletAddress: string, reviewId: number): Promise<any> {
+  try {
+    console.log('📋 Fetching review:', reviewId);
+    
+    const contract = new Contract(REVIEW_CONSENSUS_CONTRACT);
+    const sourceAccount = await server.getAccount(walletAddress);
+    
+    const reviewIdScVal = xdr.ScVal.scvU64(xdr.Uint64.fromString(reviewId.toString()));
+    
+    const transaction = new TransactionBuilder(sourceAccount, {
+      fee: BASE_FEE,
+      networkPassphrase: NETWORK_PASSPHRASE,
+    })
+      .addOperation(contract.call('get_review', reviewIdScVal))
+      .setTimeout(180)
+      .build();
+    
+    const preparedTransaction = await server.prepareTransaction(transaction);
+    const simulation = await server.simulateTransaction(preparedTransaction);
+    
+    if (SorobanRpc.Api.isSimulationSuccess(simulation)) {
+      const returnValue = simulation.result?.retval;
+      if (returnValue) {
+        const review = scValToNative(returnValue);
+        console.log('✅ Review fetched:', review);
+        return review;
+      }
+    }
+    
+    return null;
+  } catch (error) {
+    console.error('Error fetching review:', error);
+    return null;
+  }
+}
+
+// Get consensus for a claim
+export async function getConsensus(walletAddress: string, claimId: number): Promise<any> {
+  try {
+    console.log('⚖️ Fetching consensus for claim:', claimId);
+    
+    const contract = new Contract(REVIEW_CONSENSUS_CONTRACT);
+    const sourceAccount = await server.getAccount(walletAddress);
+    
+    const claimIdScVal = xdr.ScVal.scvU64(xdr.Uint64.fromString(claimId.toString()));
+    
+    const transaction = new TransactionBuilder(sourceAccount, {
+      fee: BASE_FEE,
+      networkPassphrase: NETWORK_PASSPHRASE,
+    })
+      .addOperation(contract.call('get_consensus', claimIdScVal))
+      .setTimeout(180)
+      .build();
+    
+    const preparedTransaction = await server.prepareTransaction(transaction);
+    const simulation = await server.simulateTransaction(preparedTransaction);
+    
+    if (SorobanRpc.Api.isSimulationSuccess(simulation)) {
+      const returnValue = simulation.result?.retval;
+      if (returnValue) {
+        const consensus = scValToNative(returnValue);
+        console.log('✅ Consensus fetched:', consensus);
+        return consensus;
+      }
+    }
+    
+    return null;
+  } catch (error) {
+    console.error('Error fetching consensus:', error);
+    return null;
   }
 }
